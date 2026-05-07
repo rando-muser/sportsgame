@@ -24,39 +24,89 @@ const img_personRight = assets.image`myImage0`;
 const img_playerFloat = assets.image`myImage1`;
 const img_background = assets.image`myImage2`;
 const img_hook = assets.image`myImage3`;
+const img_oxygen = assets.image`myImage7`;
 const img_blank = assets.image`myImage4`;
+const img_openingPlayer = assets.image`myImage5`;
+const img_openingBackground = assets.image`myImage6`;
 
-const imgList_items = [img_hook];
+const tile_enter = assets.tile`myTile6`;
 
-const text_thanks = ["Thank you so much!", "I am extremely grateful.", "I don't know what to say... Thanks!"]
+const tilemap_homebase = assets.tilemap`level`;
+const tilemap_blank = assets.tilemap`level2`;
+
+const imgList_items = [img_hook, img_oxygen];
+
+const text_thanks = ["Thank you so much!", "I am extremely grateful.", "I don't know what to say... Thanks!"];
 const text_hint = ["I think there's a load-bearing lacrosse stick around here.", "I saw something swimming through the tennis balls... It was inhuman...", "So, like, why isn't there any glass around here?"];
 
-const chance = [0.005, 0.001] 
+const chance = [0.005, 0.01];
 //------spawn:--person--item--
 
 //setup variables
 let personSprites = [sprites.create(img_blank)];
 let itemSprites = [sprites.create(img_blank)];
 let inventoryNames = ["Hooks"];
-let itemAmounts = [3];
-let inventory = [2];
+let itemAmounts = [3, 1];
+let inventory = [2, 0];
+personSprites[0].destroy()
+itemSprites[0].destroy();
 personSprites.pop();
 itemSprites.pop();
 let numberSaved = 0;
 let direction = -1; //0 = right, 1 = down, 2 = left, 3 = up, -1 = not moving
+let state = -1; //for opening
+let usingHook = false;
 
 //setup sprites
-let person = sprites.create(img_personLeft, SpriteKind.Enemy);
-let hook = sprites.create(img_blank, SpriteKind.Projectile)
+//player = player sprite, enemy = person, food = item, projectile = no kind
+let hook = sprites.create(img_blank, SpriteKind.Projectile);
+let bg = sprites.create(img_blank, SpriteKind.Projectile);
+let me = sprites.create(img_blank, SpriteKind.Player);
 
-//setup scene
-scene.setBackgroundImage(img_background);
-let state = 0;
-let usingHook = false;
+//----- OPENING -----
+bg.setImage(img_openingBackground);
+me.setImage(img_openingPlayer);
+bg.setPosition(100, 60);
+me.setPosition(0, 90);
+for (let i = 0; i < 30; i++) {
+    bg.x--;
+    me.x++;
+    pause(4*i);
+}
+controller.pauseUntilAnyButtonIsPressed();
+bg.destroy();
 info.setScore(0);
 
-//setup player
-let me = sprites.create(img_playerFloat, SpriteKind.Player);
+//setup scene
+function changeStateTo(target: number) {
+    if (target == 0) {
+        state = 0;
+        scene.setBackgroundImage(img_background);
+        scene.setBackgroundColor(15);
+        info.setLife(10 * 10);
+        scene.setTileMapLevel(tilemap_blank);
+        me.setImage(img_playerFloat);
+        me.setPosition(80, 60); 
+        controller.moveSprite(me, 0, 0);
+        me.ay = 0;
+        me.vy = 0;
+        inventory[0] = 2;
+    }
+    else if (target == 1) {
+        state = 1;
+        scene.setBackgroundImage(img_blank);
+        scene.setBackgroundColor(10);
+        info.setLife(1);
+        scene.setTileMapLevel(tilemap_homebase);
+        me.setImage(img_playerFloat);
+        me.setPosition(100, 60); 
+        controller.moveSprite(me, 50, 0);
+        me.ay = 100;
+    }
+}
+
+//START GAME
+changeStateTo(1);
 
 controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
     direction = 1;
@@ -68,7 +118,7 @@ controller.down.onEvent(ControllerButtonEvent.Released, function () {
 
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     direction = -1;
-    if (usingHook == false) {
+    if (usingHook == false && state == 0) {
         if (inventory[0] > 0) {
             hookPerson(0);
         }
@@ -80,7 +130,7 @@ controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
 
 controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
     direction = -1;
-    if (usingHook == false) {
+    if (usingHook == false && state == 0) {
         if (inventory[0] > 0) {
             hookPerson(2);
         }
@@ -92,24 +142,46 @@ controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
 
 controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
     direction = 3;
+    if (state == 1 && me.isHittingTile(CollisionDirection.Bottom)) {
+        me.vy = -100;
+    }
 })
 
 controller.up.onEvent(ControllerButtonEvent.Released, function () {
     direction = -1;
 })
 
-game.onUpdate(() => {
-    if (direction == 1) { //when pressing down
-        scroll(1);
-        if (Math.random() < chance[0]) {
-            spawnPerson();
-        }
-        else if (Math.random() < chance[1]) {
-            spawnItem(0);
-        }
+controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
+    if (state == 0) {
+        changeStateTo(1);
     }
-    else if (direction == -1) { //not moving
-        scroll(0.25);
+})
+
+scene.onOverlapTile(SpriteKind.Player, tile_enter, () => {
+    if (state == 1) {
+        changeStateTo(0);
+    }
+});
+
+game.onUpdate(() => {
+    if (state == 0) {
+        if (direction == 1) { //when pressing down
+            scroll(1);
+            breathe(0.1);
+            if (Math.random() < chance[0]) {
+                spawnPerson();
+            }
+            else if (Math.random() < chance[1]) {
+                spawnItem(-1);
+            }
+        }
+        else if (direction == -1) { //not moving
+            scroll(0.25);
+            breathe(0.02);
+        }
+        else {
+            breathe(0.05)
+        }
     }
 });
 
@@ -131,6 +203,12 @@ function scroll(speed: number) {
         }
     }
 };
+
+function breathe(speed: number) {
+    if (Math.random() < speed) {
+        info.changeLifeBy(-1);
+    }
+}
 
 function spawnPerson() {
     personSprites.push(sprites.create(img_personLeft, SpriteKind.Enemy));
@@ -174,7 +252,14 @@ function getItem(item: Sprite) {
     item.destroy();
     removeAt(itemSprites, arrayPosition);
     let tempNumber = imgList_items.indexOf(item.image);
-    inventory[tempNumber]+=itemAmounts[tempNumber];
+    if (tempNumber < 1) {
+        inventory[tempNumber] += itemAmounts[tempNumber];
+    }
+    else {
+        if (tempNumber == 1) {
+            info.changeLifeBy(20)
+        }
+    }
 }
 
 function hookPerson(dir: number) {
