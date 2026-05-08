@@ -28,6 +28,7 @@ const img_oxygen = assets.image`myImage7`;
 const img_blank = assets.image`myImage4`;
 const img_openingPlayer = assets.image`myImage5`;
 const img_openingBackground = assets.image`myImage6`;
+const img_bubble1 = assets.image`myImage8`;
 
 const tile_enter = assets.tile`myTile6`;
 
@@ -35,6 +36,7 @@ const tilemap_homebase = assets.tilemap`level`;
 const tilemap_blank = assets.tilemap`level2`;
 
 const imgList_items = [img_hook, img_oxygen];
+const bubbleSprites = [img_bubble1];
 
 const text_thanks = ["Thank you so much!", "I am extremely grateful.", "I don't know what to say... Thanks!"];
 const text_hint = ["I think there's a load-bearing lacrosse stick around here.", "I saw something swimming through the tennis balls... It was inhuman...", "So, like, why isn't there any glass around here?"];
@@ -45,13 +47,16 @@ const chance = [0.005, 0.01];
 //setup variables
 let personSprites = [sprites.create(img_blank)];
 let itemSprites = [sprites.create(img_blank)];
+let effectSprites = [sprites.create(img_blank)];
 let inventoryNames = ["Hooks"];
 let itemAmounts = [3, 1];
 let inventory = [2, 0];
-personSprites[0].destroy()
+personSprites[0].destroy();
 itemSprites[0].destroy();
+effectSprites[0].destroy();
 personSprites.pop();
 itemSprites.pop();
+effectSprites.pop();
 let numberSaved = 0;
 let direction = -1; //0 = right, 1 = down, 2 = left, 3 = up, -1 = not moving
 let state = -1; //for opening
@@ -80,6 +85,8 @@ info.setScore(0);
 //setup scene
 function changeStateTo(target: number) {
     if (target == 0) {
+        clear(personSprites);
+        clear(itemSprites);
         state = 0;
         scene.setBackgroundImage(img_background);
         scene.setBackgroundColor(15);
@@ -93,6 +100,8 @@ function changeStateTo(target: number) {
         inventory[0] = 2;
     }
     else if (target == 1) {
+        clear(personSprites);
+        clear(itemSprites);
         state = 1;
         scene.setBackgroundImage(img_blank);
         scene.setBackgroundColor(10);
@@ -104,6 +113,17 @@ function changeStateTo(target: number) {
         me.ay = 100;
     }
 }
+
+//Settings/save data
+/* 
+    to save:
+    # people saved (score)
+*/
+
+if (settings.exists("score") == false) {
+    settings.writeNumber("score", 0);
+}
+settings.writeNumber("score", settings.readNumber("score"));
 
 //START GAME
 changeStateTo(1);
@@ -153,6 +173,7 @@ controller.up.onEvent(ControllerButtonEvent.Released, function () {
 
 controller.menu.onEvent(ControllerButtonEvent.Pressed, function () {
     if (state == 0) {
+        saveData();
         changeStateTo(1);
     }
 })
@@ -163,10 +184,13 @@ scene.onOverlapTile(SpriteKind.Player, tile_enter, () => {
     }
 });
 
+//ON GAME UPDATE
+
 game.onUpdate(() => {
     if (state == 0) {
         if (direction == 1) { //when pressing down
             scroll(1);
+            swimEffect(0.2);
             breathe(0.1);
             if (Math.random() < chance[0]) {
                 spawnPerson();
@@ -181,6 +205,7 @@ game.onUpdate(() => {
         }
         else {
             breathe(0.05)
+            scene.cameraShake(2, 50)
         }
     }
 });
@@ -338,4 +363,41 @@ function removeAt(array: any[], pos: number) {
 
 function randomEntry(array: any[]) {
     return (array[Math.round(Math.random() * (array.length - 1))]);
+}
+
+function clear(array: any[]) {
+    for (let i = 0; i < array.length; i++) {
+        array[i].destroy()
+    }
+    array = [];
+}
+
+function saveData() {
+    settings.writeNumber("score", info.score());
+}
+
+game.onGameOver(() => {
+    changeStateTo(1);
+    saveData();
+})
+
+function swimEffect(intensity: number) {
+    if (Math.random() < intensity) {
+        effectSprites.push(sprites.create(bubbleSprites[Math.round(Math.random()*(bubbleSprites.length-1))], SpriteKind.Projectile));
+        let tempSprite = effectSprites[effectSprites.length - 1];
+        tempSprite.setPosition(me.x, me.y + 20);
+        tempSprite.vy = (Math.random() - 0) * -100
+        if (Math.random() < 0.5) {
+            tempSprite.vx = (Math.random() + 1) * -20;
+            tempSprite.x -= 6;
+        }
+        else {
+            tempSprite.vx = (Math.random() + 1) * 20;
+            tempSprite.x += 6;
+        }
+        timer.after(500, () => {
+            removeAt(effectSprites, effectSprites.indexOf(tempSprite))
+            tempSprite.destroy();
+        })
+    }
 }

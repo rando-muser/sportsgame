@@ -442,6 +442,18 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 . . . 1 1 9 9 9 9 9 9 1 1 . . . 
 . . . . . 1 1 1 1 1 1 . . . . . 
 `;
+            case "image10":
+            case "myImage8":return img`
+. . . 3 3 3 . . . 
+. . 3 3 3 3 3 . . 
+. 3 3 3 3 3 3 3 . 
+3 3 3 3 3 3 3 3 3 
+3 3 3 3 3 3 3 3 3 
+3 3 3 3 3 3 3 3 3 
+. 3 3 3 3 3 3 3 . 
+. . 3 3 3 3 3 . . 
+. . . 3 3 3 . . . 
+`;
         }
         return null;
     })
