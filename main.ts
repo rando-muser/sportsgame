@@ -22,6 +22,7 @@
 const img_personLeft = assets.image`myImage`;
 const img_personRight = assets.image`myImage0`;
 const img_playerFloat = assets.image`myImage1`;
+const img_playerDown = assets.image`myImage9`;
 const img_background = assets.image`myImage2`;
 const img_hook = assets.image`myImage3`;
 const img_oxygen = assets.image`myImage7`;
@@ -51,12 +52,14 @@ let effectSprites = [sprites.create(img_blank)];
 let inventoryNames = ["Hooks"];
 let itemAmounts = [3, 1];
 let inventory = [2, 0];
+
 personSprites[0].destroy();
 itemSprites[0].destroy();
 effectSprites[0].destroy();
 personSprites.pop();
 itemSprites.pop();
 effectSprites.pop();
+
 let numberSaved = 0;
 let direction = -1; //0 = right, 1 = down, 2 = left, 3 = up, -1 = not moving
 let state = -1; //for opening
@@ -189,6 +192,7 @@ scene.onOverlapTile(SpriteKind.Player, tile_enter, () => {
 game.onUpdate(() => {
     if (state == 0) {
         if (direction == 1) { //when pressing down
+            me.setImage(img_playerDown);
             scroll(1);
             swimEffect(0.2);
             breathe(0.1);
@@ -202,10 +206,12 @@ game.onUpdate(() => {
         else if (direction == -1) { //not moving
             scroll(0.25);
             breathe(0.02);
+            me.setImage(img_playerFloat);
         }
         else {
             breathe(0.05)
             scene.cameraShake(2, 50)
+            me.setImage(img_playerFloat);
         }
     }
 });
